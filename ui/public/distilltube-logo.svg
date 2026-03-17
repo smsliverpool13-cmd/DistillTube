@@ -1,0 +1,16 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer rounded rect (white) -->
+  <rect x="8" y="14" width="48" height="32" rx="8" fill="none" stroke="white" stroke-width="3"/>
+  
+  <!-- Inner rounded rect (purple) -->
+  <rect x="14" y="20" width="36" height="20" rx="6" fill="#7c6af7"/>
+  
+  <!-- Play button (white triangle) -->
+  <polygon points="22,24 22,36 30,30" fill="white"/>
+  
+  <!-- Diagonal line -->
+  <line x1="10" y1="14" x2="54" y2="46" stroke="black" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Bottom triangle pointer -->
+  <polygon points="32,50 24,62 40,62" fill="white"/>
+</svg>
