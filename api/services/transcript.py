@@ -6,6 +6,7 @@ import re
 from typing import Dict, List, Optional, Any
 
 import yt_dlp
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +44,20 @@ async def fetch_transcript(url: str) -> Dict[str, Any]:
     if not video_id:
         raise ValueError(f"Could not extract video ID from URL: {url}")
 
-    # Run yt-dlp in a thread; fall back to youtube-transcript-api on bot detection
+    # Run yt-dlp in a thread; fall back to youtube-transcript-api on any retrieval failure
     try:
         metadata, segments = await asyncio.to_thread(_fetch_via_ytdlp, video_id, url)
     except Exception as e:
-        if 'bot' in str(e).lower() or 'sign in' in str(e).lower():
-            logger.warning(f"yt-dlp blocked, falling back to transcript API")
-            segments = await asyncio.to_thread(_fetch_via_transcript_api, video_id)
-            metadata = {'title': video_id, 'channel': '', 'channel_id': '', 'duration': 0,
-                        'thumbnail_url': f'https://i.ytimg.com/vi/{video_id}/hqdefault.jpg',
-                        'url': url, 'video_id': video_id}
+        error_str = str(e).lower()
+        if any(x in error_str for x in ['bot', 'sign in', 'country', 'geo', 'not available', 'requested format']):
+            logger.warning(f"yt-dlp failed ({e}), falling back to transcript API")
+            try:
+                segments = await asyncio.to_thread(_fetch_via_transcript_api, video_id)
+                metadata = {'title': video_id, 'channel': '', 'channel_id': '', 'duration': 0,
+                            'thumbnail_url': f'https://i.ytimg.com/vi/{video_id}/hqdefault.jpg',
+                            'url': url, 'video_id': video_id}
+            except Exception as e2:
+                raise HTTPException(status_code=400, detail=f"Could not fetch transcript: {str(e2)}")
         else:
             raise
 
