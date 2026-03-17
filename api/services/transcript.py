@@ -44,22 +44,18 @@ async def fetch_transcript(url: str) -> Dict[str, Any]:
     if not video_id:
         raise ValueError(f"Could not extract video ID from URL: {url}")
 
-    # Run yt-dlp in a thread; fall back to youtube-transcript-api on any retrieval failure
+    # Run yt-dlp first; fall back to youtube-transcript-api for any failure
     try:
         metadata, segments = await asyncio.to_thread(_fetch_via_ytdlp, video_id, url)
     except Exception as e:
-        error_str = str(e).lower()
-        if any(x in error_str for x in ['bot', 'sign in', 'country', 'geo', 'not available', 'requested format']):
-            logger.warning(f"yt-dlp failed ({e}), falling back to transcript API")
-            try:
-                segments = await asyncio.to_thread(_fetch_via_transcript_api, video_id)
-                metadata = {'title': video_id, 'channel': '', 'channel_id': '', 'duration': 0,
-                            'thumbnail_url': f'https://i.ytimg.com/vi/{video_id}/hqdefault.jpg',
-                            'url': url, 'video_id': video_id}
-            except Exception as e2:
-                raise HTTPException(status_code=400, detail=f"Could not fetch transcript: {str(e2)}")
-        else:
-            raise
+        logger.warning(f"yt-dlp failed ({e}), falling back to transcript API")
+        try:
+            segments = await asyncio.to_thread(_fetch_via_transcript_api, video_id)
+            metadata = {'title': video_id, 'channel': '', 'channel_id': '', 'duration': 0,
+                        'thumbnail_url': f'https://i.ytimg.com/vi/{video_id}/hqdefault.jpg',
+                        'url': url, 'video_id': video_id}
+        except Exception as e2:
+            raise HTTPException(status_code=400, detail=f"Could not fetch transcript: {str(e2)}")
 
     if not segments:
         raise ValueError("No caption segments found in track")
